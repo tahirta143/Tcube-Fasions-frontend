@@ -2,6 +2,7 @@ import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -19,17 +20,19 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className="antialiased min-h-screen flex flex-col">
-        <AuthProvider>
-          <CartProvider>
-            <FavoritesProvider>
-              <Navbar />
-              <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-                {children}
-              </main>
-              <Footer />
-            </FavoritesProvider>
-          </CartProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <CartProvider>
+              <FavoritesProvider>
+                <Navbar />
+                <main className="flex-grow max-w-[1440px] w-full mx-auto px-6 md:px-12 py-8 animate-fade-in">
+                  {children}
+                </main>
+                <Footer />
+              </FavoritesProvider>
+            </CartProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

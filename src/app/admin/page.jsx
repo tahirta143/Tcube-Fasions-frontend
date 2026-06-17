@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import { 
-  ShieldCheck, Package, ShoppingBag, Users, Plus, Trash2, ShieldAlert, 
+  ShieldCheck, Package, ShoppingBag, Users, Plus, Trash2, ShieldAlert, Edit,
   RefreshCw, Upload, AlertCircle, TrendingUp, Settings, BarChart2,
   Tag, Ticket, Image, Download, Printer, Check, X, FileText, ChevronRight, Eye, Star
 } from 'lucide-react';
@@ -73,6 +73,9 @@ export default function AdminDashboard() {
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [categoryForm, setCategoryForm] = useState({ name: '', slug: '', parent_id: '', banner_url: '' });
   const [categoryMsg, setCategoryMsg] = useState({ type: '', text: '' });
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editCategoryForm, setEditCategoryForm] = useState({ name: '', slug: '', parent_id: '', banner_url: '' });
+  const [uploadingCatImage, setUploadingCatImage] = useState(false);
 
   // Coupon Tab State
   const [couponsList, setCouponsList] = useState([]);
@@ -83,10 +86,13 @@ export default function AdminDashboard() {
   // Banner Tab State
   const [bannersList, setBannersList] = useState([]);
   const [bannerLoading, setBannerLoading] = useState(false);
-  const [bannerForm, setBannerForm] = useState({ title: '', subtitle: '', image_url: '', link_url: '', type: 'hero' });
+  const [bannerForm, setBannerForm] = useState({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero' });
   const [bannerMsg, setBannerMsg] = useState({ type: '', text: '' });
   const [bannerImageMode, setBannerImageMode] = useState('url'); // 'url' or 'upload'
   const [uploadingBannerImage, setUploadingBannerImage] = useState(false);
+  const [editingBanner, setEditingBanner] = useState(null);
+  const [editBannerForm, setEditBannerForm] = useState({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero' });
+  const [editBannerImageMode, setEditBannerImageMode] = useState('url');
 
   // Reviews Tab State
   const [pendingReviewsList, setPendingReviewsList] = useState([]);
@@ -515,6 +521,56 @@ export default function AdminDashboard() {
     }
   };
 
+  // Category Update
+  const handleCategoryUpdate = async (e) => {
+    e.preventDefault();
+    setCategoryMsg({ type: '', text: '' });
+    try {
+      await axios.put(`${API_URL}/api/categories/${editingCategory.id}`, editCategoryForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCategoryMsg({ type: 'success', text: 'Category updated successfully!' });
+      setEditingCategory(null);
+      fetchTabDetails();
+    } catch (err) {
+      console.error('Update category error:', err);
+      setCategoryMsg({ type: 'error', text: err.response?.data?.message || 'Failed to update category' });
+    }
+  };
+
+  // Category Banner Image Upload
+  const handleCatImageUpload = async (e, formType = 'create') => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingCatImage(true);
+    setCategoryMsg({ type: '', text: '' });
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await axios.post(`${API_URL}/api/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const uploadedUrl = `${API_URL}${res.data.url}`;
+      if (formType === 'create') {
+        setCategoryForm((prev) => ({ ...prev, banner_url: uploadedUrl }));
+      } else {
+        setEditCategoryForm((prev) => ({ ...prev, banner_url: uploadedUrl }));
+      }
+      setCategoryMsg({ type: 'success', text: 'Category image uploaded successfully!' });
+    } catch (err) {
+      console.error('Category image upload error:', err);
+      setCategoryMsg({ type: 'error', text: err.response?.data?.message || 'Image upload failed. Max 5MB.' });
+    } finally {
+      setUploadingCatImage(false);
+    }
+  };
+
   // Coupon Submit
   const handleCouponSubmit = async (e) => {
     e.preventDefault();
@@ -552,7 +608,7 @@ export default function AdminDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBannerMsg({ type: 'success', text: 'Banner created successfully!' });
-      setBannerForm({ title: '', subtitle: '', image_url: '', link_url: '', type: 'hero' });
+      setBannerForm({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero' });
       fetchTabDetails();
     } catch (err) {
       setBannerMsg({ type: 'error', text: err.response?.data?.message || 'Failed to create banner' });
@@ -572,7 +628,7 @@ export default function AdminDashboard() {
   };
 
   // Banner image upload from device
-  const handleBannerImageUpload = async (e) => {
+  const handleBannerImageUpload = async (e, mode = 'create') => {
     const file = e.target.files[0];
     if (!file) return;
     setUploadingBannerImage(true);
@@ -587,13 +643,32 @@ export default function AdminDashboard() {
         }
       });
       const uploadedUrl = `${API_URL}${res.data.url}`;
-      setBannerForm(prev => ({ ...prev, image_url: uploadedUrl }));
+      if (mode === 'edit') {
+        setEditBannerForm(prev => ({ ...prev, image_url: uploadedUrl }));
+      } else {
+        setBannerForm(prev => ({ ...prev, image_url: uploadedUrl }));
+      }
       setBannerMsg({ type: 'success', text: 'Image uploaded successfully!' });
     } catch (err) {
       console.error('Banner image upload error:', err);
       setBannerMsg({ type: 'error', text: err.response?.data?.message || 'Image upload failed. Max 5MB.' });
     } finally {
       setUploadingBannerImage(false);
+    }
+  };
+
+  const handleBannerUpdate = async (e) => {
+    e.preventDefault();
+    setBannerMsg({ type: '', text: '' });
+    try {
+      await axios.put(`${API_URL}/api/banners/${editingBanner.id}`, editBannerForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setBannerMsg({ type: 'success', text: 'Banner updated successfully!' });
+      setEditingBanner(null);
+      fetchTabDetails();
+    } catch (err) {
+      setBannerMsg({ type: 'error', text: err.response?.data?.message || 'Failed to update banner' });
     }
   };
 
@@ -724,7 +799,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-8 w-full max-w-7xl mx-auto pb-16">
+    <div className="space-y-8 w-full max-w-[1440px] mx-auto pb-16">
 
       {/* PRINT-ONLY INVOICE WRAPPER */}
       {printOrder && (
@@ -1462,9 +1537,24 @@ export default function AdminDashboard() {
           {activeTab === 'categories' && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Form Creation */}
+                {/* Form Creation / Edit */}
                 <div className="bg-white p-6 rounded-3xl border border-sand-200 shadow-sm space-y-4 self-start">
-                  <h3 className="font-serif text-lg font-bold text-primary border-b border-sand-100 pb-2">Create New Category</h3>
+                  <div className="flex justify-between items-center border-b border-sand-100 pb-2">
+                    <h3 className="font-serif text-lg font-bold text-primary">
+                      {editingCategory ? `Edit Category` : 'Create New Category'}
+                    </h3>
+                    {editingCategory && (
+                      <button 
+                        onClick={() => {
+                          setEditingCategory(null);
+                          setCategoryMsg({ type: '', text: '' });
+                        }} 
+                        className="text-xs font-bold uppercase tracking-widest text-[#A08C75] hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                   
                   {categoryMsg.text && (
                     <div className={`p-3 rounded-lg text-xs font-semibold ${categoryMsg.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
@@ -1472,56 +1562,131 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  <form onSubmit={handleCategorySubmit} className="space-y-4 text-xs">
-                    <div className="flex flex-col space-y-1">
-                      <label className="uppercase font-bold tracking-widest text-primary/50">Category Name</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Linen Jackets"
-                        value={categoryForm.name}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') })}
-                        className="border border-sand-200 p-3 rounded-lg bg-white"
-                      />
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <label className="uppercase font-bold tracking-widest text-primary/50">Slug Reference</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. linen-jackets"
-                        value={categoryForm.slug}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
-                        className="border border-sand-200 p-3 rounded-lg bg-white"
-                      />
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <label className="uppercase font-bold tracking-widest text-primary/50">Parent Category</label>
-                      <select
-                        value={categoryForm.parent_id}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, parent_id: e.target.value })}
-                        className="border border-sand-200 p-3 rounded-lg bg-white cursor-pointer"
-                      >
-                        <option value="">None (Top Level Category)</option>
-                        {categoriesList.filter(c => !c.parent_id).map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <label className="uppercase font-bold tracking-widest text-primary/50">Banner URL</label>
-                      <input
-                        type="text"
-                        placeholder="Image URL for category pages"
-                        value={categoryForm.banner_url}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, banner_url: e.target.value })}
-                        className="border border-sand-200 p-3 rounded-lg bg-white"
-                      />
-                    </div>
-                    <button type="submit" className="w-full py-3 bg-primary hover:bg-[#A08C75] text-white font-bold uppercase tracking-widest rounded-xl transition-all shadow-md">
-                      Register Category
-                    </button>
-                  </form>
+                  {editingCategory ? (
+                    <form onSubmit={handleCategoryUpdate} className="space-y-4 text-xs">
+                      <div className="flex flex-col space-y-1">
+                        <label className="uppercase font-bold tracking-widest text-primary/50">Category Name</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Linen Jackets"
+                          value={editCategoryForm.name}
+                          onChange={(e) => setEditCategoryForm({ ...editCategoryForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') })}
+                          className="border border-sand-200 p-3 rounded-lg bg-white"
+                        />
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <label className="uppercase font-bold tracking-widest text-primary/50">Slug Reference</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. linen-jackets"
+                          value={editCategoryForm.slug}
+                          onChange={(e) => setEditCategoryForm({ ...editCategoryForm, slug: e.target.value })}
+                          className="border border-sand-200 p-3 rounded-lg bg-white"
+                        />
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <label className="uppercase font-bold tracking-widest text-primary/50">Parent Category</label>
+                        <select
+                          value={editCategoryForm.parent_id || ''}
+                          onChange={(e) => setEditCategoryForm({ ...editCategoryForm, parent_id: e.target.value })}
+                          className="border border-sand-200 p-3 rounded-lg bg-white cursor-pointer"
+                        >
+                          <option value="">None (Top Level Category)</option>
+                          {categoriesList.filter(c => !c.parent_id && c.id !== editingCategory.id).map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Image URL or upload"
+                            value={editCategoryForm.banner_url || ''}
+                            onChange={(e) => setEditCategoryForm({ ...editCategoryForm, banner_url: e.target.value })}
+                            className="border border-sand-200 p-3 rounded-lg bg-white flex-grow"
+                          />
+                          <label className="bg-sand-100 hover:bg-sand-200 border border-sand-200 px-3 py-3 rounded-lg text-center cursor-pointer font-bold uppercase tracking-wider text-[9px] flex items-center justify-center flex-shrink-0">
+                            {uploadingCatImage ? 'Uploading...' : 'Upload'}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleCatImageUpload(e, 'edit')}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                      <button type="submit" className="w-full py-3 bg-primary hover:bg-[#A08C75] text-white font-bold uppercase tracking-widest rounded-xl transition-all shadow-md">
+                        Update Category
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleCategorySubmit} className="space-y-4 text-xs">
+                      <div className="flex flex-col space-y-1">
+                        <label className="uppercase font-bold tracking-widest text-primary/50">Category Name</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Linen Jackets"
+                          value={categoryForm.name}
+                          onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') })}
+                          className="border border-sand-200 p-3 rounded-lg bg-white"
+                        />
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <label className="uppercase font-bold tracking-widest text-primary/50">Slug Reference</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. linen-jackets"
+                          value={categoryForm.slug}
+                          onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                          className="border border-sand-200 p-3 rounded-lg bg-white"
+                        />
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <label className="uppercase font-bold tracking-widest text-primary/50">Parent Category</label>
+                        <select
+                          value={categoryForm.parent_id}
+                          onChange={(e) => setCategoryForm({ ...categoryForm, parent_id: e.target.value })}
+                          className="border border-sand-200 p-3 rounded-lg bg-white cursor-pointer"
+                        >
+                          <option value="">None (Top Level Category)</option>
+                          {categoriesList.filter(c => !c.parent_id).map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Image URL or upload"
+                            value={categoryForm.banner_url}
+                            onChange={(e) => setCategoryForm({ ...categoryForm, banner_url: e.target.value })}
+                            className="border border-sand-200 p-3 rounded-lg bg-white flex-grow"
+                          />
+                          <label className="bg-sand-100 hover:bg-sand-200 border border-sand-200 px-3 py-3 rounded-lg text-center cursor-pointer font-bold uppercase tracking-wider text-[9px] flex items-center justify-center flex-shrink-0">
+                            {uploadingCatImage ? 'Uploading...' : 'Upload'}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleCatImageUpload(e, 'create')}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                      <button type="submit" className="w-full py-3 bg-primary hover:bg-[#A08C75] text-white font-bold uppercase tracking-widest rounded-xl transition-all shadow-md">
+                        Register Category
+                      </button>
+                    </form>
+                  )}
                 </div>
 
                 {/* Tree View Table */}
@@ -1544,7 +1709,24 @@ export default function AdminDashboard() {
                                 <span className="font-serif text-sm font-bold text-primary">{topCat.name}</span>
                                 <span className="text-[9px] font-mono text-primary/45 uppercase tracking-wide bg-sand-100 px-2 py-0.5 rounded">/{topCat.slug}</span>
                               </div>
-                              <button onClick={() => handleDeleteCategory(topCat.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={12} /></button>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingCategory(topCat);
+                                    setEditCategoryForm({
+                                      name: topCat.name,
+                                      slug: topCat.slug,
+                                      parent_id: topCat.parent_id || '',
+                                      banner_url: topCat.banner_url || ''
+                                    });
+                                  }}
+                                  className="p-1.5 text-secondary hover:bg-sand-100 rounded"
+                                  title="Edit Category"
+                                >
+                                  <Edit size={12} />
+                                </button>
+                                <button onClick={() => handleDeleteCategory(topCat.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={12} /></button>
+                              </div>
                             </div>
 
                             {subs.length > 0 && (
@@ -1552,7 +1734,24 @@ export default function AdminDashboard() {
                                 {subs.map(subCat => (
                                   <div key={subCat.id} className="flex justify-between items-center bg-white p-2 rounded-lg border border-sand-100">
                                     <span className="text-xs font-semibold text-primary/70">{subCat.name} (/{subCat.slug})</span>
-                                    <button onClick={() => handleDeleteCategory(subCat.id)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={11} /></button>
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => {
+                                          setEditingCategory(subCat);
+                                          setEditCategoryForm({
+                                            name: subCat.name,
+                                            slug: subCat.slug,
+                                            parent_id: subCat.parent_id || '',
+                                            banner_url: subCat.banner_url || ''
+                                          });
+                                        }}
+                                        className="p-1 text-secondary hover:bg-sand-100 rounded"
+                                        title="Edit Category"
+                                      >
+                                        <Edit size={11} />
+                                      </button>
+                                      <button onClick={() => handleDeleteCategory(subCat.id)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={11} /></button>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -1684,138 +1883,309 @@ export default function AdminDashboard() {
           {activeTab === 'banners' && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Create Banner */}
+                {/* Create / Edit Banner Form */}
                 <div className="bg-white p-6 rounded-3xl border border-sand-200 shadow-sm space-y-4 self-start">
-                  <h3 className="font-serif text-lg font-bold text-primary border-b border-sand-100 pb-2">Add Carousel Slide</h3>
-                  
-                  {bannerMsg.text && (
-                    <div className={`p-3 rounded-lg text-xs font-semibold ${bannerMsg.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                      {bannerMsg.text}
+                  {editingBanner ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center border-b border-sand-100 pb-2">
+                        <h3 className="font-serif text-lg font-bold text-primary">Edit Slide</h3>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingBanner(null);
+                            setBannerMsg({ type: '', text: '' });
+                          }}
+                          className="text-[10px] uppercase font-bold tracking-widest text-[#A08C75] hover:underline"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+
+                      {bannerMsg.text && (
+                        <div className={`p-3 rounded-lg text-xs font-semibold ${bannerMsg.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                          {bannerMsg.text}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleBannerUpdate} className="space-y-4 text-xs">
+                        <div className="flex flex-col space-y-1">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Slide Title</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Pure Linen capsule"
+                            value={editBannerForm.title}
+                            onChange={(e) => setEditBannerForm({ ...editBannerForm, title: e.target.value })}
+                            className="border border-sand-200 p-3 rounded-lg bg-white"
+                          />
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Slide Subtitle</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Capsule Release 02"
+                            value={editBannerForm.subtitle}
+                            onChange={(e) => setEditBannerForm({ ...editBannerForm, subtitle: e.target.value })}
+                            className="border border-sand-200 p-3 rounded-lg bg-white"
+                          />
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Link Path</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. /shop?category=women"
+                            value={editBannerForm.link_url}
+                            onChange={(e) => setEditBannerForm({ ...editBannerForm, link_url: e.target.value })}
+                            className="border border-sand-200 p-3 rounded-lg bg-white"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex flex-col space-y-1 col-span-2">
+                            <label className="uppercase font-bold tracking-widest text-primary/50">Placement Type</label>
+                            <select
+                              value={editBannerForm.type}
+                              onChange={(e) => setEditBannerForm({ ...editBannerForm, type: e.target.value })}
+                              className="border border-sand-200 p-3 rounded-lg bg-white cursor-pointer"
+                            >
+                              <option value="hero">Homepage Hero Carousel</option>
+                              <option value="editorial">Homepage Editorial Story</option>
+                              <option value="promo">Promotional Banner</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {editBannerForm.type === 'editorial' && (
+                          <div className="flex flex-col space-y-1">
+                            <label className="uppercase font-bold tracking-widest text-primary/50">Story Description</label>
+                            <textarea
+                              placeholder="Enter the storytelling copy..."
+                              value={editBannerForm.description || ''}
+                              onChange={(e) => setEditBannerForm({ ...editBannerForm, description: e.target.value })}
+                              className="border border-sand-200 p-3 rounded-lg bg-white h-24 resize-none"
+                            />
+                          </div>
+                        )}
+                        <div className="flex flex-col space-y-2">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
+                          <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
+                            <button
+                              type="button"
+                              onClick={() => setEditBannerImageMode('url')}
+                              className={`flex-1 py-2 transition-all ${
+                                editBannerImageMode === 'url'
+                                  ? 'bg-primary text-white'
+                                  : 'bg-white text-primary/50 hover:bg-sand-50'
+                              }`}
+                            >
+                              Paste URL
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditBannerImageMode('upload')}
+                              className={`flex-1 py-2 transition-all ${
+                                editBannerImageMode === 'upload'
+                                  ? 'bg-primary text-white'
+                                  : 'bg-white text-primary/50 hover:bg-sand-50'
+                              }`}
+                            >
+                              Upload File
+                            </button>
+                          </div>
+
+                          {editBannerImageMode === 'url' ? (
+                            <input
+                              type="text"
+                              required={!editBannerForm.image_url}
+                              placeholder="https://example.com/banner.jpg"
+                              value={editBannerForm.image_url}
+                              onChange={(e) => setEditBannerForm({ ...editBannerForm, image_url: e.target.value })}
+                              className="border border-sand-200 p-3 rounded-lg bg-white"
+                            />
+                          ) : (
+                            <div className="flex flex-col gap-2">
+                              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
+                                <Upload size={16} className="text-secondary" />
+                                <span className="text-primary/60 font-semibold">
+                                  {uploadingBannerImage ? 'Uploading…' : 'Choose image (max 5 MB)'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => handleBannerImageUpload(e, 'edit')}
+                                  disabled={uploadingBannerImage}
+                                />
+                              </label>
+                            </div>
+                          )}
+
+                          {editBannerForm.image_url && (
+                            <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
+                              <img
+                                src={editBannerForm.image_url}
+                                alt="Banner preview"
+                                className="w-full h-24 object-cover"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setEditBannerForm({ ...editBannerForm, image_url: '' })}
+                                className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <button type="submit" className="w-full py-3 bg-primary hover:bg-[#A08C75] text-white font-bold uppercase tracking-widest rounded-xl transition-all shadow-md">
+                          Update Slide
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <h3 className="font-serif text-lg font-bold text-primary border-b border-sand-100 pb-2">Add Carousel Slide</h3>
+                      
+                      {bannerMsg.text && (
+                        <div className={`p-3 rounded-lg text-xs font-semibold ${bannerMsg.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                          {bannerMsg.text}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleBannerSubmit} className="space-y-4 text-xs">
+                        <div className="flex flex-col space-y-1">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Slide Title</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Pure Linen capsule"
+                            value={bannerForm.title}
+                            onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
+                            className="border border-sand-200 p-3 rounded-lg bg-white"
+                          />
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Slide Subtitle</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Capsule Release 02"
+                            value={bannerForm.subtitle}
+                            onChange={(e) => setBannerForm({ ...bannerForm, subtitle: e.target.value })}
+                            className="border border-sand-200 p-3 rounded-lg bg-white"
+                          />
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Link Path</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. /shop?category=women"
+                            value={bannerForm.link_url}
+                            onChange={(e) => setBannerForm({ ...bannerForm, link_url: e.target.value })}
+                            className="border border-sand-200 p-3 rounded-lg bg-white"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex flex-col space-y-1 col-span-2">
+                            <label className="uppercase font-bold tracking-widest text-primary/50">Placement Type</label>
+                            <select
+                              value={bannerForm.type}
+                              onChange={(e) => setBannerForm({ ...bannerForm, type: e.target.value })}
+                              className="border border-sand-200 p-3 rounded-lg bg-white cursor-pointer"
+                            >
+                              <option value="hero">Homepage Hero Carousel</option>
+                              <option value="editorial">Homepage Editorial Story</option>
+                              <option value="promo">Promotional Banner</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {bannerForm.type === 'editorial' && (
+                          <div className="flex flex-col space-y-1">
+                            <label className="uppercase font-bold tracking-widest text-primary/50">Story Description</label>
+                            <textarea
+                              placeholder="Enter the storytelling copy..."
+                              value={bannerForm.description || ''}
+                              onChange={(e) => setBannerForm({ ...bannerForm, description: e.target.value })}
+                              className="border border-sand-200 p-3 rounded-lg bg-white h-24 resize-none"
+                            />
+                          </div>
+                        )}
+                        <div className="flex flex-col space-y-2">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
+                          <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
+                            <button
+                              type="button"
+                              onClick={() => setBannerImageMode('url')}
+                              className={`flex-1 py-2 transition-all ${
+                                bannerImageMode === 'url'
+                                  ? 'bg-primary text-white'
+                                  : 'bg-white text-primary/50 hover:bg-sand-50'
+                              }`}
+                            >
+                              Paste URL
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBannerImageMode('upload')}
+                              className={`flex-1 py-2 transition-all ${
+                                bannerImageMode === 'upload'
+                                  ? 'bg-primary text-white'
+                                  : 'bg-white text-primary/50 hover:bg-sand-50'
+                              }`}
+                            >
+                              Upload File
+                            </button>
+                          </div>
+
+                          {bannerImageMode === 'url' ? (
+                            <input
+                              type="text"
+                              required={!bannerForm.image_url}
+                              placeholder="https://example.com/banner.jpg"
+                              value={bannerForm.image_url}
+                              onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
+                              className="border border-sand-200 p-3 rounded-lg bg-white"
+                            />
+                          ) : (
+                            <div className="flex flex-col gap-2">
+                              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
+                                <Upload size={16} className="text-secondary" />
+                                <span className="text-primary/60 font-semibold">
+                                  {uploadingBannerImage ? 'Uploading…' : 'Choose image (max 5 MB)'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={handleBannerImageUpload}
+                                  disabled={uploadingBannerImage}
+                                />
+                              </label>
+                            </div>
+                          )}
+
+                          {bannerForm.image_url && (
+                            <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
+                              <img
+                                src={bannerForm.image_url}
+                                alt="Banner preview"
+                                className="w-full h-24 object-cover"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setBannerForm({ ...bannerForm, image_url: '' })}
+                                className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <button type="submit" className="w-full py-3 bg-primary hover:bg-[#A08C75] text-white font-bold uppercase tracking-widest rounded-xl transition-all shadow-md">
+                          Register Slide
+                        </button>
+                      </form>
                     </div>
                   )}
-
-                  <form onSubmit={handleBannerSubmit} className="space-y-4 text-xs">
-                    <div className="flex flex-col space-y-1">
-                      <label className="uppercase font-bold tracking-widest text-primary/50">Slide Title</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Pure Linen capsule"
-                        value={bannerForm.title}
-                        onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
-                        className="border border-sand-200 p-3 rounded-lg bg-white"
-                      />
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <label className="uppercase font-bold tracking-widest text-primary/50">Slide Subtitle</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Capsule Release 02"
-                        value={bannerForm.subtitle}
-                        onChange={(e) => setBannerForm({ ...bannerForm, subtitle: e.target.value })}
-                        className="border border-sand-200 p-3 rounded-lg bg-white"
-                      />
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <label className="uppercase font-bold tracking-widest text-primary/50">Link Path</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. /shop?category=women"
-                        value={bannerForm.link_url}
-                        onChange={(e) => setBannerForm({ ...bannerForm, link_url: e.target.value })}
-                        className="border border-sand-200 p-3 rounded-lg bg-white"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col space-y-1 col-span-2">
-                        <label className="uppercase font-bold tracking-widest text-primary/50">Placement Type</label>
-                        <select
-                          value={bannerForm.type}
-                          onChange={(e) => setBannerForm({ ...bannerForm, type: e.target.value })}
-                          className="border border-sand-200 p-3 rounded-lg bg-white cursor-pointer"
-                        >
-                          <option value="hero">Homepage Hero Carousel</option>
-                          <option value="promo">Promotional Banner</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex flex-col space-y-2">
-                      <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
-                      {/* Toggle: URL vs Upload */}
-                      <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
-                        <button
-                          type="button"
-                          onClick={() => setBannerImageMode('url')}
-                          className={`flex-1 py-2 transition-all ${
-                            bannerImageMode === 'url'
-                              ? 'bg-primary text-white'
-                              : 'bg-white text-primary/50 hover:bg-sand-50'
-                          }`}
-                        >
-                          Paste URL
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setBannerImageMode('upload')}
-                          className={`flex-1 py-2 transition-all ${
-                            bannerImageMode === 'upload'
-                              ? 'bg-primary text-white'
-                              : 'bg-white text-primary/50 hover:bg-sand-50'
-                          }`}
-                        >
-                          Upload File
-                        </button>
-                      </div>
-
-                      {bannerImageMode === 'url' ? (
-                        <input
-                          type="text"
-                          required={!bannerForm.image_url}
-                          placeholder="https://example.com/banner.jpg"
-                          value={bannerForm.image_url}
-                          onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
-                          className="border border-sand-200 p-3 rounded-lg bg-white"
-                        />
-                      ) : (
-                        <div className="flex flex-col gap-2">
-                          <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
-                            <Upload size={16} className="text-secondary" />
-                            <span className="text-primary/60 font-semibold">
-                              {uploadingBannerImage ? 'Uploading…' : 'Choose image (max 5 MB)'}
-                            </span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleBannerImageUpload}
-                              disabled={uploadingBannerImage}
-                            />
-                          </label>
-                        </div>
-                      )}
-
-                      {/* Live preview */}
-                      {bannerForm.image_url && (
-                        <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
-                          <img
-                            src={bannerForm.image_url}
-                            alt="Banner preview"
-                            className="w-full h-24 object-cover"
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setBannerForm({ ...bannerForm, image_url: '' })}
-                            className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <button type="submit" className="w-full py-3 bg-primary hover:bg-[#A08C75] text-white font-bold uppercase tracking-widest rounded-xl transition-all shadow-md">
-                      Register Slide
-                    </button>
-                  </form>
                 </div>
 
                 {/* Slides list */}
@@ -1842,10 +2212,31 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-4">
                               <span className="font-bold text-primary block">{b.title || 'Untitled'}</span>
-                              <span className="text-[10px] text-primary/40">{b.subtitle || 'No subtitle'}</span>
+                              <span className="text-[10px] text-primary/40 block">{b.subtitle || 'No subtitle'}</span>
+                              {b.description && (
+                                <p className="text-[10px] text-primary/60 max-w-xs truncate italic mt-1">{b.description}</p>
+                              )}
                             </td>
                             <td className="p-4 uppercase tracking-wider text-[9px] font-bold text-[#A08C75]">{b.type} banner</td>
-                            <td className="p-4 text-center">
+                            <td className="p-4 text-center flex items-center justify-center gap-1.5 h-16">
+                              <button
+                                onClick={() => {
+                                  setEditingBanner(b);
+                                  setEditBannerForm({
+                                    title: b.title || '',
+                                    subtitle: b.subtitle || '',
+                                    description: b.description || '',
+                                    image_url: b.image_url || '',
+                                    link_url: b.link_url || '',
+                                    type: b.type
+                                  });
+                                  setEditBannerImageMode('url');
+                                }}
+                                className="p-1.5 text-secondary hover:bg-sand-50 rounded"
+                                title="Edit Slide"
+                              >
+                                <Edit size={12} />
+                              </button>
                               <button onClick={() => handleDeleteBanner(b.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={12} /></button>
                             </td>
                           </tr>

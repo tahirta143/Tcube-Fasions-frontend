@@ -152,6 +152,32 @@ export default function UserDashboard() {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (!confirm('Are you sure you want to cancel this order?')) return;
+    try {
+      await axios.put(`${API_URL}/api/orders/${orderId}/cancel`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('Order cancelled successfully.');
+      fetchMyOrders();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel order.');
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!confirm('Are you sure you want to remove this order from your history? This action is permanent.')) return;
+    try {
+      await axios.delete(`${API_URL}/api/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('Order removed from history.');
+      fetchMyOrders();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to remove order.');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
       
@@ -229,7 +255,8 @@ export default function UserDashboard() {
                   const statusColors = {
                     pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
                     shipped: 'bg-blue-50 text-blue-700 border-blue-200',
-                    delivered: 'bg-green-50 text-green-700 border-green-200'
+                    delivered: 'bg-green-50 text-green-700 border-green-200',
+                    cancelled: 'bg-red-50 text-red-700 border-red-200'
                   };
 
                   return (
@@ -271,26 +298,32 @@ export default function UserDashboard() {
                       {isExpanded && (
                         <div className="px-5 pb-5 border-t border-sand-200/50 bg-sand-50/20 space-y-6 pt-5 animate-fade-in">
                           {/* Visual Delivery Status Bar */}
-                          <div className="space-y-2">
-                            <span className="text-[10px] uppercase font-bold tracking-widest text-primary/40">Shipment Status</span>
-                            <div className="grid grid-cols-3 gap-1 text-center text-[10px] font-bold uppercase tracking-wider">
-                              <div className="flex flex-col items-center gap-1">
-                                <Clock size={16} className="text-yellow-600" />
-                                <span className="text-yellow-700">1. Pending Approval</span>
-                                <div className="h-1.5 w-full bg-yellow-500 rounded-full mt-1.5" />
-                              </div>
-                              <div className="flex flex-col items-center gap-1">
-                                <Package size={16} className={['shipped', 'delivered'].includes(order.order_status) ? 'text-blue-600' : 'text-primary/20'} />
-                                <span className={['shipped', 'delivered'].includes(order.order_status) ? 'text-blue-700' : 'text-primary/30'}>2. Shipped</span>
-                                <div className={`h-1.5 w-full rounded-full mt-1.5 ${['shipped', 'delivered'].includes(order.order_status) ? 'bg-blue-500' : 'bg-sand-200'}`} />
-                              </div>
-                              <div className="flex flex-col items-center gap-1">
-                                <CheckCircle size={16} className={order.order_status === 'delivered' ? 'text-green-600' : 'text-primary/20'} />
-                                <span className={order.order_status === 'delivered' ? 'text-green-700' : 'text-primary/30'}>3. Delivered</span>
-                                <div className={`h-1.5 w-full rounded-full mt-1.5 ${order.order_status === 'delivered' ? 'bg-green-500' : 'bg-sand-200'}`} />
+                          {order.order_status !== 'cancelled' ? (
+                            <div className="space-y-2">
+                              <span className="text-[10px] uppercase font-bold tracking-widest text-primary/40">Shipment Status</span>
+                              <div className="grid grid-cols-3 gap-1 text-center text-[10px] font-bold uppercase tracking-wider">
+                                <div className="flex flex-col items-center gap-1">
+                                  <Clock size={16} className="text-yellow-600" />
+                                  <span className="text-yellow-700">1. Pending Approval</span>
+                                  <div className="h-1.5 w-full bg-yellow-500 rounded-full mt-1.5" />
+                                </div>
+                                <div className="flex flex-col items-center gap-1">
+                                  <Package size={16} className={['shipped', 'delivered'].includes(order.order_status) ? 'text-blue-600' : 'text-primary/20'} />
+                                  <span className={['shipped', 'delivered'].includes(order.order_status) ? 'text-blue-700' : 'text-primary/30'}>2. Shipped</span>
+                                  <div className={`h-1.5 w-full rounded-full mt-1.5 ${['shipped', 'delivered'].includes(order.order_status) ? 'bg-blue-500' : 'bg-sand-200'}`} />
+                                </div>
+                                <div className="flex flex-col items-center gap-1">
+                                  <CheckCircle size={16} className={order.order_status === 'delivered' ? 'text-green-600' : 'text-primary/20'} />
+                                  <span className={order.order_status === 'delivered' ? 'text-green-700' : 'text-primary/30'}>3. Delivered</span>
+                                  <div className={`h-1.5 w-full rounded-full mt-1.5 ${order.order_status === 'delivered' ? 'bg-green-500' : 'bg-sand-200'}`} />
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="bg-red-50/50 p-4 rounded-xl border border-red-200/40 text-center text-red-700 font-bold uppercase tracking-widest text-[10px]">
+                              This order has been cancelled. Inventory stock was restored.
+                            </div>
+                          )}
 
                           {/* Items listing */}
                           <div className="space-y-3 pt-3 border-t border-sand-200/50">
@@ -313,6 +346,34 @@ export default function UserDashboard() {
                             <div className="bg-sand-100/55 p-3 rounded-lg border border-sand-200 text-[10px] text-primary/60 font-semibold space-y-1">
                               {order.transaction_id && <p>TRANSACTION REFERENCE ID: {order.transaction_id}</p>}
                               {order.sender_account && <p>SENDER MOBILE ACCOUNT: {order.sender_account}</p>}
+                            </div>
+                          )}
+
+                          {order.order_status === 'pending' && (
+                            <div className="flex justify-end pt-4 border-t border-sand-200/40">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCancelOrder(order.id);
+                                }}
+                                className="px-5 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 hover:text-red-800 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+                              >
+                                Cancel Order
+                              </button>
+                            </div>
+                          )}
+
+                          {order.order_status === 'cancelled' && (
+                            <div className="flex justify-end pt-4 border-t border-sand-200/40">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteOrder(order.id);
+                                }}
+                                className="px-5 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 hover:text-red-800 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+                              >
+                                Delete Order
+                              </button>
                             </div>
                           )}
                         </div>

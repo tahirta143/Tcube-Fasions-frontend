@@ -18,8 +18,8 @@ export default function Footer() {
 
   return (
     <footer className="bg-sand-50 border-t border-sand-200 mt-20">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
-        
+      <div className="max-w-[1440px] mx-auto px-6 md:px-12 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
+
         {/* Brand Info */}
         <div className="space-y-4">
           <h3 className="font-serif text-xl font-bold tracking-widest text-primary">TCUBE FASHIONS</h3>
@@ -78,7 +78,7 @@ export default function Footer() {
           <p className="text-sm text-primary/60 leading-relaxed">
             Subscribe for exclusive access to capsule collections, promotions, and design concepts.
           </p>
-          
+
           <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
             <div className="flex border-b border-primary/20 focus-within:border-secondary transition-colors py-1">
               <input

@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import ProductCard from '@/components/ProductCard';
-import { SlidersHorizontal, ArrowUpDown, RefreshCw } from 'lucide-react';
+import { SlidersHorizontal, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -22,6 +22,10 @@ function ShopContent() {
   const [sortBy, setSortBy] = useState('featured');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Pagination State (2 rows = 6 items per page on 3-col desktop layout)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
   // Static options
   const categories = ['all', 'women', 'men', 'kids', 'accessories', 'shoes'];
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '39', '40', '41', '42', '43', '44', 'One Size'];
@@ -37,6 +41,7 @@ function ShopContent() {
 
   // Fetch products
   const fetchProducts = async () => {
+    setCurrentPage(1);
     setLoading(true);
     try {
       const params = {};
@@ -108,6 +113,11 @@ function ShopContent() {
     setSearchTerm('');
     router.push('/shop');
   };
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = products.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(products.length / itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -250,7 +260,7 @@ function ShopContent() {
         </div>
 
         {/* Product Grid */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 flex flex-col justify-between h-full min-h-[500px]">
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -258,17 +268,59 @@ function ShopContent() {
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-20 bg-white/40 border border-dashed border-sand-200 rounded-2xl">
+            <div className="text-center py-20 bg-white/40 border border-dashed border-sand-200 rounded-2xl flex-grow">
               <p className="text-sm text-primary/40 uppercase tracking-widest font-bold">No garments found matching criteria</p>
               <button onClick={handleReset} className="mt-4 text-xs font-bold text-secondary uppercase tracking-widest hover:underline">
                 Clear Filters
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 animate-fade-in">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+            <div className="space-y-10 flex-grow">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6 animate-fade-in">
+                {currentItems.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center space-x-2 pt-8 border-t border-sand-200/40">
+                  <button
+                    onClick={() => {
+                      setCurrentPage(prev => Math.max(prev - 1, 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === 1}
+                    className="p-2.5 rounded-lg border border-sand-200 bg-white text-primary hover:text-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => {
+                        setCurrentPage(page);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className={`w-10 h-10 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all ${currentPage === page ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white border-sand-200 text-primary hover:text-secondary'}`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => {
+                      setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="p-2.5 rounded-lg border border-sand-200 bg-white text-primary hover:text-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

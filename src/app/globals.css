@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #FDFBF7;
   /* Luxurious off-white */
@@ -16,6 +18,97 @@
   --shadow-lux: 0 20px 40px -15px rgba(160, 140, 117, 0.15);
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.5);
+}
+
+.dark {
+  --background: #000000;
+  /* Solid black */
+  --foreground: #FDFBF7;
+  /* Off-white */
+  --primary: #FFFFFF;
+  --secondary: #D4C3B3;
+  /* Lighter bronze/beige with higher contrast */
+  --sand-50: #0C0C0C;
+  --sand-100: #151515;
+  --sand-200: #262626;
+  --sand-300: #404040;
+  --shadow-lux: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+  --glass-bg: rgba(10, 10, 10, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.12);
+}
+
+/* Dark Mode Helper Overrides for Hardcoded Light Themes */
+.dark .bg-white {
+  background-color: #0C0C0C !important;
+  color: #FDFBF7 !important;
+}
+
+.dark .bg-white\/95,
+.dark .bg-white\/90,
+.dark .bg-white\/80,
+.dark .bg-white\/60,
+.dark .bg-white\/40 {
+  background-color: rgba(12, 12, 12, 0.85) !important;
+}
+
+.dark .glass-panel {
+  background-color: rgba(6, 6, 6, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark .bg-white\/95.backdrop-blur-md {
+  background-color: rgba(0, 0, 0, 0.95) !important;
+}
+
+.dark .border-sand-200,
+.dark .border-sand-200\/50,
+.dark .border-sand-200\/40,
+.dark .border-sand-200\/20,
+.dark .border-sand-100,
+.dark .border-slate-50 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #121212 !important;
+  color: #FDFBF7 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: var(--secondary) !important;
+}
+
+.dark .shadow-inner {
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.6) !important;
+}
+
+.dark .text-primary\/70 {
+  color: rgba(253, 251, 247, 0.7) !important;
+}
+
+.dark .text-primary\/80 {
+  color: rgba(253, 251, 247, 0.8) !important;
+}
+
+.dark .text-primary\/60 {
+  color: rgba(253, 251, 247, 0.6) !important;
+}
+
+.dark .text-primary\/50 {
+  color: rgba(253, 251, 247, 0.5) !important;
+}
+
+.dark .text-primary\/40 {
+  color: rgba(253, 251, 247, 0.4) !important;
+}
+
+.dark .text-primary\/30 {
+  color: rgba(253, 251, 247, 0.3) !important;
 }
 
 @theme {

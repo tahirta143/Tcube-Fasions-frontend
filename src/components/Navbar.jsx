@@ -5,13 +5,15 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { ShoppingBag, User, LogOut, Menu, X, ShieldAlert, Heart } from 'lucide-react';
+import { ShoppingBag, User, LogOut, Menu, X, ShieldAlert, Heart, Sun, Moon } from 'lucide-react';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
   const { favoritesCount } = useFavorites();
+  const { theme, toggleTheme, mounted } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -89,6 +91,14 @@ export default function Navbar() {
           </Link>
         )}
 
+        <button
+          onClick={toggleTheme}
+          className="text-primary hover:text-secondary transition-all p-1 focus:outline-none cursor-pointer"
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {!mounted || theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
+
         <Link href="/favorites" className="relative text-primary hover:text-secondary transition-colors" title="My Favorites">
           <Heart size={20} />
           {favoritesCount > 0 && (
@@ -110,6 +120,13 @@ export default function Navbar() {
 
       {/* Mobile Actions & Hamburger */}
       <div className="flex items-center space-x-4 md:hidden">
+        <button
+          onClick={toggleTheme}
+          className="text-primary hover:text-secondary transition-all p-1 focus:outline-none cursor-pointer"
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {!mounted || theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
         <Link href="/favorites" className="relative text-primary" title="My Favorites">
           <Heart size={20} />
           {favoritesCount > 0 && (
