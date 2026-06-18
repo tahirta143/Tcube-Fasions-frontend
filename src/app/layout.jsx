@@ -7,6 +7,8 @@ import { LoadingProvider } from '@/context/LoadingContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PageLoader from '@/components/PageLoader';
+import { ChatProvider } from '@/context/ChatContext';
+import ChatWidget from '@/components/ChatWidget';
 
 export const metadata = {
   title: 'TCUBE Fashions | Luxury Minimalist Fashion Label',
@@ -27,12 +29,15 @@ export default function RootLayout({ children }) {
             <AuthProvider>
               <CartProvider>
                 <FavoritesProvider>
-                  <PageLoader />
-                  <Navbar />
-                  <main className="flex-grow max-w-[1440px] w-full mx-auto px-6 md:px-12 py-8 animate-fade-in">
-                    {children}
-                  </main>
-                  <Footer />
+                  <ChatProvider>
+                    <PageLoader />
+                    <Navbar />
+                    <main className="flex-grow max-w-[1440px] w-full mx-auto px-6 md:px-12 py-8 animate-fade-in">
+                      {children}
+                    </main>
+                    <Footer />
+                    <ChatWidget />
+                  </ChatProvider>
                 </FavoritesProvider>
               </CartProvider>
             </AuthProvider>
