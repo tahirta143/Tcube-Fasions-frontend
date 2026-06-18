@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import LoaderSpinner from '@/components/LoaderSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { 
   ShieldCheck, Package, ShoppingBag, Users, Plus, Trash2, ShieldAlert, Edit,
@@ -962,10 +963,7 @@ export default function AdminDashboard() {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-32 space-y-3 print:hidden">
-          <RefreshCw size={28} className="animate-spin text-secondary" />
-          <span className="text-xs uppercase tracking-widest font-semibold text-primary/40">Fetching console details...</span>
-        </div>
+        <LoaderSpinner message="Fetching console details..." className="py-32" />
       ) : (
         <div className="animate-fade-in print:hidden">
 

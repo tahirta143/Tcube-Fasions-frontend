@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import ProductCard from '@/components/ProductCard';
 import { SlidersHorizontal, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import LoaderSpinner from '@/components/LoaderSpinner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -331,7 +332,7 @@ function ShopContent() {
 
 export default function ShopPage() {
   return (
-    <Suspense fallback={<div className="text-center py-20">Loading Shop...</div>}>
+    <Suspense fallback={<LoaderSpinner message="Loading Shop Collections..." className="py-24" />}>
       <ShopContent />
     </Suspense>
   );

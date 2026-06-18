@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import LoaderSpinner from '@/components/LoaderSpinner';
 import { Shield, Smartphone, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -155,9 +156,8 @@ export default function PaymentGatewaySimulator() {
         )}
 
         {status === 'processing' && (
-          <div className="p-12 text-center flex flex-col items-center justify-center space-y-4">
-            <RefreshCw size={40} className="animate-spin text-secondary" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary/50">Processing transaction authorization...</span>
+          <div className="p-12 text-center flex flex-col items-center justify-center">
+            <LoaderSpinner message="Processing transaction authorization..." className="py-4" />
           </div>
         )}
 

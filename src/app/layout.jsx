@@ -3,8 +3,10 @@ import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { LoadingProvider } from '@/context/LoadingContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PageLoader from '@/components/PageLoader';
 
 export const metadata = {
   title: 'TCUBE Fashions | Luxury Minimalist Fashion Label',
@@ -21,17 +23,20 @@ export default function RootLayout({ children }) {
       </head>
       <body className="antialiased min-h-screen flex flex-col">
         <ThemeProvider>
-          <AuthProvider>
-            <CartProvider>
-              <FavoritesProvider>
-                <Navbar />
-                <main className="flex-grow max-w-[1440px] w-full mx-auto px-6 md:px-12 py-8 animate-fade-in">
-                  {children}
-                </main>
-                <Footer />
-              </FavoritesProvider>
-            </CartProvider>
-          </AuthProvider>
+          <LoadingProvider>
+            <AuthProvider>
+              <CartProvider>
+                <FavoritesProvider>
+                  <PageLoader />
+                  <Navbar />
+                  <main className="flex-grow max-w-[1440px] w-full mx-auto px-6 md:px-12 py-8 animate-fade-in">
+                    {children}
+                  </main>
+                  <Footer />
+                </FavoritesProvider>
+              </CartProvider>
+            </AuthProvider>
+          </LoadingProvider>
         </ThemeProvider>
       </body>
     </html>

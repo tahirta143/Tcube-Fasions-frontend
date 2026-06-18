@@ -3,6 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
+import LoaderSpinner from '@/components/LoaderSpinner';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useFavorites } from '@/context/FavoritesContext';
@@ -133,10 +134,7 @@ export default function ProductDetailPage({ params }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-40 space-y-4">
-        <RefreshCw size={36} className="animate-spin text-secondary" />
-        <span className="text-xs uppercase tracking-widest font-semibold text-primary/40">Loading Garment Details...</span>
-      </div>
+      <LoaderSpinner message="Loading Garment Details..." className="py-24" />
     );
   }
 
