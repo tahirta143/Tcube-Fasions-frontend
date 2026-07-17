@@ -109,109 +109,59 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  const slidesToUse = heroBanners.length > 0
-    ? heroBanners.map(b => ({
-      image: b.image_url,
-      title: b.title || 'TCUBE Capsule',
-      subtitle: b.subtitle || 'EXCLUSIVE RELEASE',
-      description: b.subtitle || 'Experience limited-edition minimalist tailoring.',
-      link: b.link_url || '/shop'
-    }))
-    : HERO_SLIDES;
-
-  // Auto-scroll hero slider
-  useEffect(() => {
-    if (slidesToUse.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slidesToUse.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [slidesToUse]);
-
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slidesToUse.length);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slidesToUse.length) % slidesToUse.length);
-
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = products.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(products.length / itemsPerPage);
 
+  const activeHero = heroBanners.length > 0 ? heroBanners[0] : null;
+  const heroVideoSrc = activeHero?.video_url || activeHero?.image_url || '/hero1.mp4';
+  const heroTitle = activeHero?.title || 'The Motion Editorial';
+  const heroSubtitle = activeHero?.subtitle || 'CAPSULE RUNWAY 2026';
+  const heroDescription = activeHero?.description || activeHero?.subtitle || 'Experience movement, form, and texture in our latest runway-inspired luxury knitwear and tailoring.';
+  const heroLink = activeHero?.link_url || '/shop';
+
   return (
     <div className="space-y-24 pb-12 w-full">
 
-      {/* 1. EDITORIAL HERO SLIDER - Full Screen Edge-to-Edge */}
+      {/* 1. EDITORIAL HERO - Full Screen Edge-to-Edge with single background video */}
       <div className="relative w-screen left-1/2 right-1/2 -translate-x-1/2 -mt-8 h-[85vh] md:h-[90vh] overflow-hidden">
-        <AnimatePresence mode="wait">
-          {slidesToUse.length > 0 && (
-            <motion.div
-              key={currentSlide}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1 }}
-              className="absolute inset-0 w-full h-full"
-            >
-              {/* Background Dark Overlay */}
-              <div className="absolute inset-0 bg-black/30 z-10" />
-              <img
-                src={slidesToUse[currentSlide].image}
-                alt={slidesToUse[currentSlide].title}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+        <video
+          src={heroVideoSrc}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Background Dark Overlay */}
+        <div className="absolute inset-0 bg-black/35 z-10" />
 
-              {/* Slider Content Column */}
-              <div className="absolute inset-0 z-20 flex flex-col justify-center text-white w-full h-full">
-                <div className="max-w-[1440px] w-full mx-auto px-6 md:px-12 space-y-6 flex flex-col">
-                  <span className="text-xs uppercase tracking-[0.3em] font-bold text-[#A08C75] bg-white/90 px-4 py-1.5 rounded-full self-start shadow-sm">
-                    {slidesToUse[currentSlide].subtitle}
-                  </span>
+        {/* Hero Content Column */}
+        <div className="absolute inset-0 z-20 flex flex-col justify-center text-white w-full h-full">
+          <div className="max-w-[1440px] w-full mx-auto px-6 md:px-12 space-y-6 flex flex-col">
+            <span className="text-xs uppercase tracking-[0.3em] font-bold text-[#A08C75] bg-white/95 px-4 py-1.5 rounded-full self-start shadow-sm text-primary">
+              {heroSubtitle}
+            </span>
 
-                  <h1 className="font-serif text-4xl md:text-7xl font-bold tracking-tight leading-[1.15] max-w-4xl">
-                    {slidesToUse[currentSlide].title}
-                  </h1>
+            <h1 className="font-serif text-4xl md:text-7xl font-bold tracking-tight leading-[1.15] max-w-4xl">
+              {heroTitle}
+            </h1>
 
-                  <p className="text-sm md:text-base text-white/85 font-light leading-relaxed max-w-xl">
-                    {slidesToUse[currentSlide].description}
-                  </p>
+            <p className="text-sm md:text-base text-white/85 font-light leading-relaxed max-w-xl">
+              {heroDescription}
+            </p>
 
-                  <div className="pt-4 flex gap-4">
-                    <Link
-                      href={slidesToUse[currentSlide].link}
-                      className="inline-flex items-center gap-2 bg-white text-primary hover:bg-[#A08C75] hover:text-white px-8 py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase transition-all duration-300 shadow-md"
-                    >
-                      Explore Collection
-                      <ArrowRight size={14} />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Navigation Arrows */}
-        <button
-          onClick={prevSlide}
-          className="absolute left-6 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/30 text-white p-3.5 rounded-full backdrop-blur-md transition-all focus:outline-none"
-        >
-          <ChevronLeft size={22} />
-        </button>
-        <button
-          onClick={nextSlide}
-          className="absolute right-6 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/30 text-white p-3.5 rounded-full backdrop-blur-md transition-all focus:outline-none"
-        >
-          <ChevronRight size={22} />
-        </button>
-
-        {/* Slide Indicators */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-2.5">
-          {slidesToUse.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentSlide(idx)}
-              className={`h-1.5 rounded-full transition-all ${currentSlide === idx ? 'bg-white w-8' : 'bg-white/45 w-2.5'}`}
-            />
-          ))}
+            <div className="pt-4 flex gap-4">
+              <Link
+                href={heroLink}
+                className="inline-flex items-center gap-2 bg-white text-primary hover:bg-[#A08C75] hover:text-white px-8 py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase transition-all duration-300 shadow-md"
+              >
+                Explore Collection
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -342,13 +292,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Right: Large Editorial Picture */}
+        {/* Right: Large Editorial Picture or Video */}
         <div className="aspect-[4/3] md:aspect-auto min-h-[400px] w-full bg-sand-100 relative">
-          <img
-            src={editorialBanners.length > 0 ? editorialBanners[0].image_url : "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=1000&auto=format&fit=crop"}
-            alt="Artisanal craft"
-            className="w-full h-full object-cover object-center"
-          />
+          {editorialBanners.length > 0 && (editorialBanners[0].video_url || (editorialBanners[0].image_url && (editorialBanners[0].image_url.endsWith('.mp4') || editorialBanners[0].image_url.includes('video') || editorialBanners[0].image_url.includes('mixkit.co/videos')))) ? (
+            <video
+              src={editorialBanners[0].video_url || editorialBanners[0].image_url}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover object-center"
+            />
+          ) : (
+            <img
+              src={editorialBanners.length > 0 ? editorialBanners[0].image_url : "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=1000&auto=format&fit=crop"}
+              alt="Artisanal craft"
+              className="w-full h-full object-cover object-center"
+            />
+          )}
         </div>
       </section>
 
