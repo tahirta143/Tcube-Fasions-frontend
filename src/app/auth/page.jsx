@@ -84,14 +84,17 @@ function AuthContent() {
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] bg-[#FDFBF7] dark:bg-black w-screen h-screen flex flex-col lg:flex-row overflow-hidden">
-      {/* Left: Background Image (75% width on desktop, hidden on mobile) */}
+      {/* Left: Background Video (75% width on desktop, hidden on mobile) */}
       <div className="hidden lg:block lg:w-3/4 relative h-full min-h-[500px] bg-sand-100 overflow-hidden">
-        <img
-          src="/auth-bg.png"
-          alt="Luxury Fashion Circle"
+        <video
+          src="/login.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/25 z-10" />
+        <div className="absolute inset-0 bg-black/50 z-10" />
 
         {/* Brand Logo at the top left of the image */}
         <div className="absolute top-8 left-12 z-20">

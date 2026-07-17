@@ -87,13 +87,18 @@ export default function AdminDashboard() {
   // Banner Tab State
   const [bannersList, setBannersList] = useState([]);
   const [bannerLoading, setBannerLoading] = useState(false);
-  const [bannerForm, setBannerForm] = useState({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero' });
+  const [bannerForm, setBannerForm] = useState({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero', video_url: '' });
   const [bannerMsg, setBannerMsg] = useState({ type: '', text: '' });
   const [bannerImageMode, setBannerImageMode] = useState('url'); // 'url' or 'upload'
   const [uploadingBannerImage, setUploadingBannerImage] = useState(false);
+  const [bannerVideoMode, setBannerVideoMode] = useState('url'); // 'url' or 'upload'
+  const [uploadingBannerVideo, setUploadingBannerVideo] = useState(false);
   const [editingBanner, setEditingBanner] = useState(null);
-  const [editBannerForm, setEditBannerForm] = useState({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero' });
+  const [editBannerForm, setEditBannerForm] = useState({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero', video_url: '' });
   const [editBannerImageMode, setEditBannerImageMode] = useState('url');
+  const [editBannerVideoMode, setEditBannerVideoMode] = useState('url'); // 'url' or 'upload'
+  const [bannerMediaType, setBannerMediaType] = useState('image'); // 'image' or 'video'
+  const [editBannerMediaType, setEditBannerMediaType] = useState('image'); // 'image' or 'video'
 
   // Reviews Tab State
   const [pendingReviewsList, setPendingReviewsList] = useState([]);
@@ -605,11 +610,18 @@ export default function AdminDashboard() {
     e.preventDefault();
     setBannerMsg({ type: '', text: '' });
     try {
-      await axios.post(`${API_URL}/api/banners`, bannerForm, {
+      const payload = { ...bannerForm };
+      if (bannerMediaType === 'image') {
+        payload.video_url = '';
+      } else {
+        payload.image_url = '';
+      }
+      await axios.post(`${API_URL}/api/banners`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBannerMsg({ type: 'success', text: 'Banner created successfully!' });
-      setBannerForm({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero' });
+      setBannerForm({ title: '', subtitle: '', description: '', image_url: '', link_url: '', type: 'hero', video_url: '' });
+      setBannerMediaType('image');
       fetchTabDetails();
     } catch (err) {
       setBannerMsg({ type: 'error', text: err.response?.data?.message || 'Failed to create banner' });
@@ -658,11 +670,47 @@ export default function AdminDashboard() {
     }
   };
 
+  // Banner video upload from device
+  const handleBannerVideoUpload = async (e, mode = 'create') => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingBannerVideo(true);
+    setBannerMsg({ type: '', text: '' });
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await axios.post(`${API_URL}/api/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const uploadedUrl = `${API_URL}${res.data.url}`;
+      if (mode === 'edit') {
+        setEditBannerForm(prev => ({ ...prev, video_url: uploadedUrl }));
+      } else {
+        setBannerForm(prev => ({ ...prev, video_url: uploadedUrl }));
+      }
+      setBannerMsg({ type: 'success', text: 'Video uploaded successfully!' });
+    } catch (err) {
+      console.error('Banner video upload error:', err);
+      setBannerMsg({ type: 'error', text: err.response?.data?.message || 'Video upload failed. Max 500MB.' });
+    } finally {
+      setUploadingBannerVideo(false);
+    }
+  };
+
   const handleBannerUpdate = async (e) => {
     e.preventDefault();
     setBannerMsg({ type: '', text: '' });
     try {
-      await axios.put(`${API_URL}/api/banners/${editingBanner.id}`, editBannerForm, {
+      const payload = { ...editBannerForm };
+      if (editBannerMediaType === 'image') {
+        payload.video_url = '';
+      } else {
+        payload.image_url = '';
+      }
+      await axios.put(`${API_URL}/api/banners/${editingBanner.id}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBannerMsg({ type: 'success', text: 'Banner updated successfully!' });
@@ -1962,78 +2010,182 @@ export default function AdminDashboard() {
                             />
                           </div>
                         )}
+
                         <div className="flex flex-col space-y-2">
-                          <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
-                          <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Banner Media Type</label>
+                          <div className="flex rounded-lg overflow-hidden border border-sand-200 text-xs font-bold uppercase tracking-widest">
                             <button
                               type="button"
-                              onClick={() => setEditBannerImageMode('url')}
-                              className={`flex-1 py-2 transition-all ${
-                                editBannerImageMode === 'url'
-                                  ? 'bg-primary text-white'
+                              onClick={() => setEditBannerMediaType('image')}
+                              className={`flex-1 py-2.5 transition-all ${
+                                editBannerMediaType === 'image'
+                                  ? 'bg-[#A08C75] text-white'
                                   : 'bg-white text-primary/50 hover:bg-sand-50'
                               }`}
                             >
-                              Paste URL
+                              Image
                             </button>
                             <button
                               type="button"
-                              onClick={() => setEditBannerImageMode('upload')}
-                              className={`flex-1 py-2 transition-all ${
-                                editBannerImageMode === 'upload'
-                                  ? 'bg-primary text-white'
+                              onClick={() => setEditBannerMediaType('video')}
+                              className={`flex-1 py-2.5 transition-all ${
+                                editBannerMediaType === 'video'
+                                  ? 'bg-[#A08C75] text-white'
                                   : 'bg-white text-primary/50 hover:bg-sand-50'
                               }`}
                             >
-                              Upload File
+                              Video
                             </button>
                           </div>
+                        </div>
 
-                          {editBannerImageMode === 'url' ? (
-                            <input
-                              type="text"
-                              required={!editBannerForm.image_url}
-                              placeholder="https://example.com/banner.jpg"
-                              value={editBannerForm.image_url}
-                              onChange={(e) => setEditBannerForm({ ...editBannerForm, image_url: e.target.value })}
-                              className="border border-sand-200 p-3 rounded-lg bg-white"
-                            />
-                          ) : (
-                            <div className="flex flex-col gap-2">
-                              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
-                                <Upload size={16} className="text-secondary" />
-                                <span className="text-primary/60 font-semibold">
-                                  {uploadingBannerImage ? 'Uploading…' : 'Choose image (max 5 MB)'}
-                                </span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => handleBannerImageUpload(e, 'edit')}
-                                  disabled={uploadingBannerImage}
-                                />
-                              </label>
-                            </div>
-                          )}
-
-                          {editBannerForm.image_url && (
-                            <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
-                              <img
-                                src={editBannerForm.image_url}
-                                alt="Banner preview"
-                                className="w-full h-24 object-cover"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
+                        {editBannerMediaType === 'image' ? (
+                          <div className="flex flex-col space-y-2">
+                            <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
+                            <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
                               <button
                                 type="button"
-                                onClick={() => setEditBannerForm({ ...editBannerForm, image_url: '' })}
-                                className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                onClick={() => setEditBannerImageMode('url')}
+                                className={`flex-1 py-2 transition-all ${
+                                  editBannerImageMode === 'url'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-white text-primary/50 hover:bg-sand-50'
+                                }`}
                               >
-                                <X size={10} />
+                                Paste URL
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditBannerImageMode('upload')}
+                                className={`flex-1 py-2 transition-all ${
+                                  editBannerImageMode === 'upload'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-white text-primary/50 hover:bg-sand-50'
+                                }`}
+                              >
+                                Upload File
                               </button>
                             </div>
-                          )}
-                        </div>
+
+                            {editBannerImageMode === 'url' ? (
+                              <input
+                                type="text"
+                                required={editBannerMediaType === 'image' && !editBannerForm.image_url}
+                                placeholder="https://example.com/banner.jpg"
+                                value={editBannerForm.image_url}
+                                onChange={(e) => setEditBannerForm({ ...editBannerForm, image_url: e.target.value })}
+                                className="border border-sand-200 p-3 rounded-lg bg-white"
+                              />
+                            ) : (
+                              <div className="flex flex-col gap-2">
+                                <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
+                                  <Upload size={16} className="text-secondary" />
+                                  <span className="text-primary/60 font-semibold">
+                                    {uploadingBannerImage ? 'Uploading…' : 'Choose image (max 5 MB)'}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => handleBannerImageUpload(e, 'edit')}
+                                    disabled={uploadingBannerImage}
+                                  />
+                                </label>
+                              </div>
+                            )}
+
+                            {editBannerForm.image_url && (
+                              <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
+                                <img
+                                  src={editBannerForm.image_url}
+                                  alt="Banner preview"
+                                  className="w-full h-24 object-cover"
+                                  onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setEditBannerForm({ ...editBannerForm, image_url: '' })}
+                                  className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col space-y-2">
+                            <label className="uppercase font-bold tracking-widest text-primary/50">Banner Video</label>
+                            <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
+                              <button
+                                type="button"
+                                onClick={() => setEditBannerVideoMode('url')}
+                                className={`flex-1 py-2 transition-all ${
+                                  editBannerVideoMode === 'url'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-white text-primary/50 hover:bg-sand-50'
+                                }`}
+                              >
+                                Paste URL
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditBannerVideoMode('upload')}
+                                className={`flex-1 py-2 transition-all ${
+                                  editBannerVideoMode === 'upload'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-white text-primary/50 hover:bg-sand-50'
+                                }`}
+                              >
+                                Upload File
+                              </button>
+                            </div>
+
+                            {editBannerVideoMode === 'url' ? (
+                              <input
+                                type="text"
+                                required={editBannerMediaType === 'video' && !editBannerForm.video_url}
+                                placeholder="e.g. /hero.mp4 or https://example.com/video.mp4"
+                                value={editBannerForm.video_url || ''}
+                                onChange={(e) => setEditBannerForm({ ...editBannerForm, video_url: e.target.value })}
+                                className="border border-sand-200 p-3 rounded-lg bg-white"
+                              />
+                            ) : (
+                              <div className="flex flex-col gap-2">
+                                <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
+                                  <Upload size={16} className="text-secondary" />
+                                  <span className="text-primary/60 font-semibold">
+                                    {uploadingBannerVideo ? 'Uploading…' : 'Choose video (max 500 MB)'}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="video/*"
+                                    className="hidden"
+                                    onChange={(e) => handleBannerVideoUpload(e, 'edit')}
+                                    disabled={uploadingBannerVideo}
+                                  />
+                                </label>
+                              </div>
+                            )}
+
+                            {editBannerForm.video_url && (
+                              <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
+                                <video
+                                  src={editBannerForm.video_url}
+                                  controls
+                                  muted
+                                  className="w-full h-24 object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setEditBannerForm({ ...editBannerForm, video_url: '' })}
+                                  className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <button type="submit" className="w-full py-3 bg-primary hover:bg-[#A08C75] text-white font-bold uppercase tracking-widest rounded-xl transition-all shadow-md">
                           Update Slide
                         </button>
@@ -2106,78 +2258,182 @@ export default function AdminDashboard() {
                             />
                           </div>
                         )}
+
                         <div className="flex flex-col space-y-2">
-                          <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
-                          <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
+                          <label className="uppercase font-bold tracking-widest text-primary/50">Banner Media Type</label>
+                          <div className="flex rounded-lg overflow-hidden border border-sand-200 text-xs font-bold uppercase tracking-widest">
                             <button
                               type="button"
-                              onClick={() => setBannerImageMode('url')}
-                              className={`flex-1 py-2 transition-all ${
-                                bannerImageMode === 'url'
-                                  ? 'bg-primary text-white'
+                              onClick={() => setBannerMediaType('image')}
+                              className={`flex-1 py-2.5 transition-all ${
+                                bannerMediaType === 'image'
+                                  ? 'bg-[#A08C75] text-white'
                                   : 'bg-white text-primary/50 hover:bg-sand-50'
                               }`}
                             >
-                              Paste URL
+                              Image
                             </button>
                             <button
                               type="button"
-                              onClick={() => setBannerImageMode('upload')}
-                              className={`flex-1 py-2 transition-all ${
-                                bannerImageMode === 'upload'
-                                  ? 'bg-primary text-white'
+                              onClick={() => setBannerMediaType('video')}
+                              className={`flex-1 py-2.5 transition-all ${
+                                bannerMediaType === 'video'
+                                  ? 'bg-[#A08C75] text-white'
                                   : 'bg-white text-primary/50 hover:bg-sand-50'
                               }`}
                             >
-                              Upload File
+                              Video
                             </button>
                           </div>
+                        </div>
 
-                          {bannerImageMode === 'url' ? (
-                            <input
-                              type="text"
-                              required={!bannerForm.image_url}
-                              placeholder="https://example.com/banner.jpg"
-                              value={bannerForm.image_url}
-                              onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
-                              className="border border-sand-200 p-3 rounded-lg bg-white"
-                            />
-                          ) : (
-                            <div className="flex flex-col gap-2">
-                              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
-                                <Upload size={16} className="text-secondary" />
-                                <span className="text-primary/60 font-semibold">
-                                  {uploadingBannerImage ? 'Uploading…' : 'Choose image (max 5 MB)'}
-                                </span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={handleBannerImageUpload}
-                                  disabled={uploadingBannerImage}
-                                />
-                              </label>
-                            </div>
-                          )}
-
-                          {bannerForm.image_url && (
-                            <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
-                              <img
-                                src={bannerForm.image_url}
-                                alt="Banner preview"
-                                className="w-full h-24 object-cover"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
+                        {bannerMediaType === 'image' ? (
+                          <div className="flex flex-col space-y-2">
+                            <label className="uppercase font-bold tracking-widest text-primary/50">Banner Image</label>
+                            <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
                               <button
                                 type="button"
-                                onClick={() => setBannerForm({ ...bannerForm, image_url: '' })}
-                                className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                onClick={() => setBannerImageMode('url')}
+                                className={`flex-1 py-2 transition-all ${
+                                  bannerImageMode === 'url'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-white text-primary/50 hover:bg-sand-50'
+                                }`}
                               >
-                                <X size={10} />
+                                Paste URL
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBannerImageMode('upload')}
+                                className={`flex-1 py-2 transition-all ${
+                                  bannerImageMode === 'upload'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-white text-primary/50 hover:bg-sand-50'
+                                }`}
+                              >
+                                Upload File
                               </button>
                             </div>
-                          )}
-                        </div>
+
+                            {bannerImageMode === 'url' ? (
+                              <input
+                                type="text"
+                                required={bannerMediaType === 'image' && !bannerForm.image_url}
+                                placeholder="https://example.com/banner.jpg"
+                                value={bannerForm.image_url}
+                                onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
+                                className="border border-sand-200 p-3 rounded-lg bg-white"
+                              />
+                            ) : (
+                              <div className="flex flex-col gap-2">
+                                <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
+                                  <Upload size={16} className="text-secondary" />
+                                  <span className="text-primary/60 font-semibold">
+                                    {uploadingBannerImage ? 'Uploading…' : 'Choose image (max 5 MB)'}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleBannerImageUpload}
+                                    disabled={uploadingBannerImage}
+                                  />
+                                </label>
+                              </div>
+                            )}
+
+                            {bannerForm.image_url && (
+                              <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
+                                <img
+                                  src={bannerForm.image_url}
+                                  alt="Banner preview"
+                                  className="w-full h-24 object-cover"
+                                  onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setBannerForm({ ...bannerForm, image_url: '' })}
+                                  className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col space-y-2">
+                            <label className="uppercase font-bold tracking-widest text-primary/50">Banner Video</label>
+                            <div className="flex rounded-lg overflow-hidden border border-sand-200 text-[10px] font-bold uppercase tracking-widest">
+                              <button
+                                type="button"
+                                onClick={() => setBannerVideoMode('url')}
+                                className={`flex-1 py-2 transition-all ${
+                                  bannerVideoMode === 'url'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-white text-primary/50 hover:bg-sand-50'
+                                }`}
+                              >
+                                Paste URL
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBannerVideoMode('upload')}
+                                className={`flex-1 py-2 transition-all ${
+                                  bannerVideoMode === 'upload'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-white text-primary/50 hover:bg-sand-50'
+                                }`}
+                              >
+                                Upload File
+                              </button>
+                            </div>
+
+                            {bannerVideoMode === 'url' ? (
+                              <input
+                                type="text"
+                                required={bannerMediaType === 'video' && !bannerForm.video_url}
+                                placeholder="e.g. /hero.mp4 or https://example.com/video.mp4"
+                                value={bannerForm.video_url || ''}
+                                onChange={(e) => setBannerForm({ ...bannerForm, video_url: e.target.value })}
+                                className="border border-sand-200 p-3 rounded-lg bg-white"
+                              />
+                            ) : (
+                              <div className="flex flex-col gap-2">
+                                <label className="flex items-center justify-center gap-2 border-2 border-dashed border-sand-300 rounded-xl p-4 cursor-pointer hover:border-[#A08C75] hover:bg-sand-50/50 transition-all">
+                                  <Upload size={16} className="text-secondary" />
+                                  <span className="text-primary/60 font-semibold">
+                                    {uploadingBannerVideo ? 'Uploading…' : 'Choose video (max 500 MB)'}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="video/*"
+                                    className="hidden"
+                                    onChange={(e) => handleBannerVideoUpload(e, 'create')}
+                                    disabled={uploadingBannerVideo}
+                                  />
+                                </label>
+                              </div>
+                            )}
+
+                            {bannerForm.video_url && (
+                              <div className="relative rounded-lg overflow-hidden border border-sand-100 mt-1">
+                                <video
+                                  src={bannerForm.video_url}
+                                  controls
+                                  muted
+                                  className="w-full h-24 object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setBannerForm({ ...bannerForm, video_url: '' })}
+                                  className="absolute top-1 right-1 bg-red-500/90 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <button type="submit" className="w-full py-3 bg-primary hover:bg-[#A08C75] text-white font-bold uppercase tracking-widest rounded-xl transition-all shadow-md">
                           Register Slide
                         </button>
@@ -2226,9 +2482,12 @@ export default function AdminDashboard() {
                                     description: b.description || '',
                                     image_url: b.image_url || '',
                                     link_url: b.link_url || '',
-                                    type: b.type
+                                    type: b.type,
+                                    video_url: b.video_url || ''
                                   });
                                   setEditBannerImageMode('url');
+                                  setEditBannerVideoMode('url');
+                                  setEditBannerMediaType(b.video_url ? 'video' : 'image');
                                 }}
                                 className="p-1.5 text-secondary hover:bg-sand-50 rounded"
                                 title="Edit Slide"

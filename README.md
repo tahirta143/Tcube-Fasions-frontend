@@ -34,3 +34,21 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+.env
+PORT=5000
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=root123
+DB_NAME=tcube_fashions
+JWT_SECRET=tcube_fashions_super_secret_key_987654321
+STRIPE_SECRET_KEY=sk_test_mockkey
+GROQ_API_KEY=YOUR_GROQ_API_KEY
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# Paymob Pakistan API Credentials (leave empty to use local simulator)
+PAYMOB_API_KEY=
+PAYMOB_HMAC_SECRET=
+PAYMOB_INTEGRATION_ID_EASYPAISA=
+PAYMOB_INTEGRATION_ID_JAZZCASH=
